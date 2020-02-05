@@ -34,12 +34,12 @@ class FlatModal extends Component {
               value={this.props.personInfo.PersonType}
               onChange={this.props.handlePersonTypeChange}
             >
-              <option value="1">Owner</option>
-              <option value="2">Resident</option>
-              <option value="3">Watchman</option>
-              <option value="4">Electrician</option>
-              <option value="5">Plumber</option>
-              <option value="6">Others</option>
+              <option value="0">Owner</option>
+              <option value="1">Resident</option>
+              <option value="2">Watchman</option>
+              <option value="3">Electrician</option>
+              <option value="4">Plumber</option>
+              <option value="5">Others</option>
             </select>
           </div>
         </div>

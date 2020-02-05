@@ -1,11 +1,12 @@
 import React, { Component } from "react";
 import { Navbar, Nav, NavDropdown } from "react-bootstrap";
+import AppConfig from "../appConfig.json";
 
 class Navbar1 extends Component {
   render() {
     return (
       <Navbar bg="light" expand="lg">
-        <Navbar.Brand href="apt">Venkateshwara Kuteer</Navbar.Brand>
+        <Navbar.Brand href="apt">{AppConfig.ApartmentName}</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="mr-auto">

@@ -19,7 +19,7 @@ class MaintenenceItemModal extends Component {
             <input
               type="text"
               className="form-control"
-              placeholder="Flat Name"
+              placeholder="Item Name"
               value={this.props.maintenenceItem.Name}
               onChange={e => this.props.handleMaintenenceItemNameChange(e)}
             />
@@ -35,7 +35,6 @@ class MaintenenceItemModal extends Component {
                 type="checkbox"
                 onChange={this.props.updateType}
                 checked={this.props.maintenenceItem.IsWater}
-                disabled={this.props.checkboxEnabled}
               />
             </label>
           </div>

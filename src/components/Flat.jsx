@@ -18,6 +18,12 @@ class Flat extends Component {
     allOwners: [],
     allResidents: []
   };
+  getPersonName = personObj => {
+    if (personObj) {
+      return personObj.Name;
+    }
+    return null;
+  };
   getFlatInfoToPost = () => {
     var {
       Flat,
@@ -45,16 +51,22 @@ class Flat extends Component {
       },
       body: JSON.stringify(this.getFlatInfoToPost())
     })
-      .then(response => response.json())
       .then(data => {
-        if (data) {
-          toast.error(data);
+        if (!data.ok) {
+          toast.error(data.statusText);
         } else {
           this.onModalClose();
+          var addUpdateText =
+            this.state.flatInformation.FlatId ||
+            this.state.flatInformation.FlatId == 0
+              ? "updated"
+              : "added";
           toast.success(
             "Flat '" +
               this.state.flatInformation.Flat.Name +
-              "' added successfully!!"
+              "' " +
+              addUpdateText +
+              " successfully!!"
           );
           this.refreshGrid();
         }
@@ -64,8 +76,7 @@ class Flat extends Component {
       });
   };
   refreshGrid = () => {
-    this.loadPeople(0);
-    this.loadPeople(1);
+    this.loadPeople();
     fetch(AppConfig.API_URL + "/api/FlatMember")
       .then(response => response.json())
       .then(data => {
@@ -137,7 +148,7 @@ class Flat extends Component {
       <div>
         <div className="mb-3 my-lg-0">
           <br />
-          <div style={{ textAlign: "right", marginTop: 70 }}>
+          <div style={{ textAlign: "right" }}>
             <button
               className="btn btn-outline-success my-2 my-sm-0 "
               style={{ marginLeft: -150, position: "fixed" }}
@@ -161,7 +172,9 @@ class Flat extends Component {
             flatInfo={this.state.flatInformation}
           />
         </div>
-        <div style={{ marginTop: 100 }}>{this.getHtmlForCards()}</div>
+        <div style={{ marginTop: 100, height: "755px", overflowY: "auto" }}>
+          {this.getHtmlForCards()}
+        </div>
       </div>
     );
   }
@@ -197,16 +210,20 @@ class Flat extends Component {
     flatInformation.Flat.Name = e.target.value;
     this.setState({ flatInformation });
   };
-  loadPeople = intType => {
-    fetch(AppConfig.API_URL + "/api/People?personType=" + intType)
+  loadPeople = () => {
+    var url = AppConfig.API_URL + "/api/People?personType=";
+    var owners = 0;
+    var residents = 1;
+    fetch(url + owners)
       .then(response => response.json())
       .then(data => {
-        if (intType == 0) {
-          this.setState({ allOwners: data });
-        } else {
-          var allResidents = this.state.allOwners.concat(data);
-          this.setState({ allResidents });
-        }
+        this.setState({ allOwners: data });
+        fetch(url + residents)
+          .then(response1 => response1.json())
+          .then(data1 => {
+            var allResidents = this.state.allOwners.concat(data1);
+            this.setState({ allResidents });
+          });
       })
       .catch(function(error) {
         toast.error(error.message);
@@ -240,7 +257,7 @@ class Flat extends Component {
         style={{
           margin: 20,
           width: 300,
-          height: 350,
+          height: 300,
           display: "inline-block",
           boxShadow: "0 2px 5px 0 rgba(0,0,0,.50), 0 2px 10px 0 rgba(0,0,0,.12)"
         }}
@@ -259,7 +276,7 @@ class Flat extends Component {
           Owner Name:
           <br />
           <p className="text-success" style={{ display: "inline" }}>
-            {flatInfo.PrimaryOwner.Name}
+            {this.getPersonName(flatInfo.PrimaryOwner)}
           </p>
           <br />
           {this.getResidentInfo(flatInfo)}
@@ -275,7 +292,7 @@ class Flat extends Component {
           Resident Name:
           <br />
           <p className="text-success" style={{ display: "inline" }}>
-            {flatInfo.PrimaryResident.Name}
+            {this.getPersonName(flatInfo.PrimaryResident)}
           </p>
         </div>
       );

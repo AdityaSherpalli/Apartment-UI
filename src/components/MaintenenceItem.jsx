@@ -11,14 +11,12 @@ class MaintenenceItem extends Component {
     maintenenceItem: {}
   };
   openModal = () => {
-    this.setState({ personInformation: {} });
-    this.setState({ open: true });
+    this.setState({ maintenenceItem: {}, open: true });
   };
   onModalClose = () => {
     this.setState({ open: false });
   };
   editItem = maintenenceItemId => {
-    debugger;
     let allmaintenenceItems = [...this.state.maintenenceItems];
     let maintenenceItemToEdit = {
       ...allmaintenenceItems.filter(x => x.Id == maintenenceItemId)[0]
@@ -34,7 +32,7 @@ class MaintenenceItem extends Component {
             <th></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody style={{ height: "750px", overflowY: "auto" }}>
           {this.state.maintenenceItems.map(maintenenceItem => (
             <tr key={maintenenceItem.Id}>
               <td>{maintenenceItem.Name}</td>
@@ -65,15 +63,18 @@ class MaintenenceItem extends Component {
     })
       .then(response => response.json())
       .then(data => {
+        debugger;
         if (data) {
           toast.error(data);
         } else {
           this.onModalClose();
+          debugger;
           toast.success(
-            "Flat '" +
-              this.state.maintenenceItems.Name +
+            "Item '" +
+              this.state.maintenenceItem.Name +
               "' added successfully!!"
           );
+          this.setState({ open: false });
           this.refreshGrid();
         }
       })
@@ -95,6 +96,33 @@ class MaintenenceItem extends Component {
     var maintenenceItem = { ...this.state.maintenenceItem };
     maintenenceItem.IsWater = e.target.checked;
     this.setState({ maintenenceItem });
+  };
+  deleteMaintenenceItem = () => {
+    debugger;
+    fetch(
+      AppConfig.API_URL +
+        "/api/maintenenceItem/" +
+        this.state.maintenenceItem.Id,
+      {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json"
+        }
+      }
+    )
+      .then(data => {
+        this.onModalClose();
+        toast.success(
+          "Item '" +
+            this.state.maintenenceItem.Name +
+            "' deleted successfully!!"
+        );
+        this.refreshGrid();
+      })
+      .catch(function(error) {
+        toast.error(error.message);
+      });
   };
   saveMaintenenceItem = () => {
     this.postInfo();
@@ -128,14 +156,6 @@ class MaintenenceItem extends Component {
             saveMaintenenceItem={this.saveMaintenenceItem}
             deleteMaintenenceItem={this.deleteMaintenenceItem}
             onCloseModal={this.onModalClose}
-            checkboxEnabled={this.state.maintenenceItems.find(function(
-              maintenenceItem
-            ) {
-              return (
-                maintenenceItem.Id != this.state.maintenenceItem.Id &&
-                maintenenceItem.IsWater
-              );
-            })}
             maintenenceItem={this.state.maintenenceItem}
             updateType={this.updateType}
             handleMaintenenceItemNameChange={
@@ -149,9 +169,7 @@ class MaintenenceItem extends Component {
 
         <br />
         <br />
-        <div style={{ height: "770px", overflowY: "auto" }}>
-          {this.getHtmlForCards()}
-        </div>
+        {this.getHtmlForCards()}
       </div>
     );
   }
