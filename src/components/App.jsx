@@ -9,6 +9,7 @@ import Test from "./Test";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Maintenence from "./Maintenence";
+import WaterReading from "./WaterReading";
 
 class App extends Component {
   render() {
@@ -23,6 +24,7 @@ class App extends Component {
           <Route path="/people" component={People} />
           <Route path="/apt" component={Test} />
           <Route path="/maintenenceItems" component={MaintenenceItem} />
+          <Route path="/waterReadings" component={WaterReading} />
           <Route path="/maintenence" component={Maintenence} />
         </Router>
       </div>

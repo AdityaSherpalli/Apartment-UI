@@ -7,7 +7,6 @@ import "react-datepicker/dist/react-datepicker.css";
 import { toast } from "react-toastify";
 import ReactModal from "./Modal/ReactModal";
 import MaintenenceEditor from "./Modal/MaintenenceEditor";
-import WaterMaintenenceEditor from "./Modal/WaterMaintenenceEditor.jsx";
 
 class Maintenence extends Component {
   state = {
@@ -21,7 +20,6 @@ class Maintenence extends Component {
     allFlats: [],
     openModal: false,
     openEditor: false,
-    openWaterMaintenenceEditor: false,
     modalHeader: "",
     modalBody: "",
     modalYesText: "",
@@ -53,9 +51,28 @@ class Maintenence extends Component {
         toast.error(error.message);
       });
   };
+  handleTextBoxVisibility = (isShowRequest, index) => {
+    var { allMaintenence } = { ...this.state };
+    allMaintenence.MaintenenceItems[index].TextBoxVisibility = isShowRequest;
+    this.setState({ allMaintenence });
+  };
+  handleMonthSelectionChanged = (selectedMonths, index) => {
+    var { allMaintenence } = { ...this.state };
+    allMaintenence.MaintenenceItems[index].SelectedMonths = selectedMonths;
+    this.setState({ allMaintenence });
+  };
   handleItemChange = (e, index) => {
     var { allMaintenence } = { ...this.state };
     allMaintenence.MaintenenceItems[index].Id = parseInt(e.target.value);
+    allMaintenence.MaintenenceItems[index].MaintenenceItemId = parseInt(
+      e.target.value
+    );
+    allMaintenence.MaintenenceItems[
+      index
+    ].MaintenenceItem = this.state.allItems.find(
+      item => item.Id == parseInt(e.target.value)
+    );
+
     this.setState({ allMaintenence });
   };
   handlePriceChange = (e, index) => {
@@ -108,27 +125,68 @@ class Maintenence extends Component {
           {this.getDetailedMaintenenceInfo(flatInfo, isFlat)}
           <div className="card-footer text-right">
             <h3>
-              <span className="align-middle">{this.getAmount(isFlat)}</span>
+              <span className="align-middle">
+                {this.getAmount(flatInfo.FlatId)}
+              </span>
             </h3>
           </div>
         </div>
       </div>
     );
   };
-  getAmount = isFlat => {
-    debugger;
-    var amount = this.state.allMaintenence.MaintenenceItems.reduce(
-      (total, item) => total + item.Amount,
-      0
-    );
-    if (isFlat) return Math.ceil(amount / this.state.allFlats.length);
+  getAmount = flatId => {
+    var flatCount = this.state.allFlats.length;
+    var amount = this.state.allMaintenence.MaintenenceItems.reduce(function(
+      total,
+      item
+    ) {
+      if (flatId) {
+        if (item.MaintenenceItem.IsWater && item.WaterReadings) {
+          var currentFlatReading = item.WaterReadings.filter(
+            reading => reading.FlatId === flatId
+          );
+          var totalReadings = item.WaterReadings.reduce(
+            (total, item) => total + item.WaterReading,
+            0
+          );
+          return (
+            total +
+            (item.Amount * currentFlatReading[0].WaterReading) / totalReadings
+          );
+        } else {
+          return total + item.Amount / flatCount;
+        }
+      } else {
+        return total + item.Amount;
+      }
+    },
+    0);
 
     return Math.ceil(amount);
   };
-  getDetailedAmount = (amount, isFlat) => {
-    if (isFlat) return Math.ceil(amount / this.state.allFlats.length);
+  getDetailedAmount = (maintenenceInfo, isFlat, flatInfo) => {
+    if (isFlat) {
+      if (
+        maintenenceInfo.MaintenenceItem &&
+        maintenenceInfo.MaintenenceItem.IsWater &&
+        maintenenceInfo.WaterReadings
+      ) {
+        var currentFlatReading = maintenenceInfo.WaterReadings.filter(
+          reading => reading.FlatId === flatInfo.FlatId
+        );
+        var totalReadings = maintenenceInfo.WaterReadings.reduce(
+          (total, item) => total + item.WaterReading,
+          0
+        );
+        return Math.ceil(
+          maintenenceInfo.Amount *
+            (currentFlatReading[0].WaterReading / totalReadings)
+        );
+      }
+      return Math.ceil(maintenenceInfo.Amount / this.state.allFlats.length);
+    }
 
-    return amount;
+    return maintenenceInfo.Amount;
   };
   getAllMaintenenceInfo = flatInfo => {
     if (this.state.allMaintenence.MaintenenceItems.length > 0) {
@@ -163,7 +221,7 @@ class Maintenence extends Component {
               </div>
               <div className="col-sm-2">
                 <label>
-                  {this.getDetailedAmount(maintenenceInfo.Amount, isFlat)}
+                  {this.getDetailedAmount(maintenenceInfo, isFlat, flatInfo)}
                 </label>
               </div>
               <div className="col-sm-1" />
@@ -174,6 +232,9 @@ class Maintenence extends Component {
     );
   };
   componentDidMount() {
+    var { startDate } = { ...this.state };
+    startDate.setMonth(startDate.getMonth() - 1);
+    this.setState({ startDate });
     fetch(AppConfig.API_URL + "/api/MaintenenceItem")
       .then(response => response.json())
       .then(data => {
@@ -196,13 +257,15 @@ class Maintenence extends Component {
       (this.state.startDate.getMonth() < 9
         ? "0" + (this.state.startDate.getMonth() + 1)
         : this.state.startDate.getMonth() + 1);
-    debugger;
     fetch(
       AppConfig.API_URL + "/api/Maintenence?maintenencePeriod=" + requestDate
     )
       .then(response => response.json())
       .then(data => {
-        if (!data.IsCreated) {
+        if (
+          !data.IsCreated ||
+          (data.MaintenenceItems && data.MaintenenceItems.length === 0)
+        ) {
           this.setState({
             modalHeader: "No Data Found",
             modalBody:
@@ -239,40 +302,21 @@ class Maintenence extends Component {
         IsCreated: false,
         WaterMaintenences: [],
         MaintenenceItems: [],
-        Maintenence: { Id: 0, Period: "" }
+        Maintenence: { Id: 0, Period: this.state.startDate }
       }
     });
     this.closeModal();
     this.openEditorModal();
   };
-  openWaterMaintenenceEditor = () => {
-    fetch(AppConfig.API_URL + "/api/Maintenence")
-      .then(response => response.json())
-      .then(data => {
-        this.setState({ allItems: data });
-      })
-      .catch(function(error) {
-        toast.error(error.message);
-      });
-    // var waterMaintenence = this.state.allMaintenence.MaintenenceItems.filter(function(item){
-    //   return item.
-    // })
-    this.setState({
-      openWaterMaintenenceEditor: true
-    });
-  };
   closeEditor = () => {
     this.setState({ openEditor: false });
-  };
-  closeWaterEditor = () => {
-    this.setState({ openWaterMaintenenceEditor: false });
   };
   getMaintnenceToPost = () => {
     var { allMaintenence } = { ...this.state };
     var period =
       this.state.startDate.getFullYear() +
       "" +
-      (this.state.startDate.getMonth() + 1);
+      (this.state.startDate.getMonth() + 1).toString().padStart(2, "0");
     allMaintenence.Maintenence = { Period: period };
     this.setState({ allMaintenence });
     return this.state.allMaintenence;
@@ -286,10 +330,12 @@ class Maintenence extends Component {
       },
       body: JSON.stringify(this.getMaintnenceToPost())
     })
+      .then(response => response.json())
       .then(data => {
-        if (!data.ok) {
-          toast.error(data.statusText);
+        if (data) {
+          toast.error(data);
         } else {
+          this.fetchMaintenence();
           this.closeEditor();
         }
       })
@@ -310,32 +356,28 @@ class Maintenence extends Component {
       var allMaintenence = { ...this.state.allMaintenence };
       allMaintenence.MaintenenceItems.push({
         Id: -1,
-        Amount: 0.0
+        Amount: 0.0,
+        MaintenenceItem: {}
       });
       this.setState({ allMaintenence });
     }
   };
+
   render() {
     return (
-      <div style={{ overflowX: "hidden" }}>
+      <div style={{ overflowX: "hidden", overflowY: "hidden" }}>
         <MaintenenceEditor
           onOpenModal={this.state.openEditor}
           handleItemChange={this.handleItemChange}
           handlePriceChange={this.handlePriceChange}
           handleNotesChange={this.handleNotesChange}
+          handleTextBoxVisibility={this.handleTextBoxVisibility}
+          handleMonthSelectionChanged={this.handleMonthSelectionChanged}
           addItem={this.addItem}
           saveWaterMaintenence={this.saveWaterMaintenence}
           onCloseModal={this.closeEditor}
-          openWaterMaintenence={this.openWaterMaintenenceEditor}
           allItems={this.state.allItems}
           allMaintenenceItems={this.state.allMaintenence}
-        />
-        <WaterMaintenenceEditor
-          onOpenModal={this.state.openWaterMaintenenceEditor}
-          saveWaterMaintenence={this.saveWaterMaintenence}
-          allFlatInfo={this.state.allMaintenence}
-          waterMaintenenceItems={this.state.waterMaintenenceItems}
-          onCloseModal={this.closeWaterEditor}
         />
         <ReactModal
           onOpenModal={this.state.openModal}
@@ -367,15 +409,13 @@ class Maintenence extends Component {
           </center>
         </div>
         <div>{this.getAllMaintenenceInfo({ Id: 0, Flat: { Name: "" } })}</div>
-        <center>
-          <div className="form-group row" center>
-            {this.state.allFlats
-              .filter(function(flat) {
-                return flat.Id && flat.Id != 0;
-              })
-              .map(flatInfo => this.getAllMaintenenceInfo(flatInfo))}
-          </div>
-        </center>
+        <div className="row center-block" style={{ marginLeft: "7%" }}>
+          {this.state.allFlats
+            .filter(function(flat) {
+              return flat.Id && flat.Id != 0;
+            })
+            .map(flatInfo => this.getAllMaintenenceInfo(flatInfo))}
+        </div>
       </div>
     );
   }

@@ -18,6 +18,9 @@ class Navbar1 extends Component {
               <NavDropdown.Item href="maintenenceItems">
                 Maintenence Items
               </NavDropdown.Item>
+              <NavDropdown.Item href="waterReadings">
+                Water Reading
+              </NavDropdown.Item>
               <NavDropdown.Item href="maintenence">
                 Maintenence
               </NavDropdown.Item>
