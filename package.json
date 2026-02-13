@@ -15,7 +15,7 @@
     "react-notify-toast": "^0.5.0",
     "react-responsive-modal": "^4.0.1",
     "react-router-dom": "^5.0.1",
-    "react-scripts": "3.0.1",
+    "react-scripts": "5.0.1",
     "react-toast-notifications": "^2.2.5",
     "react-toastify": "^5.4.0"
   },
